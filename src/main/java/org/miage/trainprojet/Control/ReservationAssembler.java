@@ -21,7 +21,15 @@ public class ReservationAssembler implements RepresentationModelAssembler<Reserv
     public EntityModel<Reservation> toModel(Reservation reservation) {
         return EntityModel.of(reservation,
                 linkTo(methodOn(ReservationRepresentation.class)
-                        .getOneReservation(reservation.getId())).withSelfRel());
+                        .getOneReservation(reservation.getId())).withSelfRel(),
+                linkTo(methodOn(TrajetRepresentation.class)
+                        .rechercheRetour(reservation.getAller().getArrivee(), reservation.getAller().getDepart(),reservation.getAller().getJour().plusDays(1).toString(),2)).withRel("Rechercher un retour"),
+                linkTo(methodOn(ReservationRepresentation.class)
+                        .patchRetour(reservation.getId(),null)).withRel("Ajouter un retour"),
+                linkTo(methodOn(ReservationRepresentation.class)
+                        .patchConfirme(reservation.getId())).withRel("Confirmer cette reservation"),
+                linkTo(methodOn(ReservationRepresentation.class)
+                        .deleteReservation(reservation.getId())).withRel("Annuler cette réservation"));
     }
 
     @Override

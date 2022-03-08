@@ -57,5 +57,16 @@ public class TrajetRepresentation {
         }
     }
 
-
+    @GetMapping(value= "/depart/{depart}/arrivee/{arrivee}/jour/{jour}/couloir/{couloir}")
+    public ResponseEntity<?> rechercheRetour(String arrivee, String depart, String jour, int couloir) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        LocalDateTime dateTime = LocalDateTime.parse(jour, formatter);
+        if (couloir == 0) {
+            return ResponseEntity.ok(ta.toCollectionModel(tr.trajetsFenetre(depart, arrivee, dateTime)));
+        } else if (couloir == 1) {
+            return ResponseEntity.ok(ta.toCollectionModel(tr.trajetsCouloir(depart, arrivee, dateTime)));
+        } else {
+            return ResponseEntity.ok(ta.toCollectionModel(tr.trajets(depart, arrivee, dateTime)));
+        }
+    }
 }

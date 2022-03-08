@@ -23,7 +23,7 @@ public class TrajetAssembler implements RepresentationModelAssembler<Trajet,Enti
                 linkTo(methodOn(TrajetRepresentation.class)
                         .getOneTrajet(trajet.getId())).withSelfRel(),
                 linkTo(methodOn(ReservationRepresentation.class)
-                        .getOneReservation(trajet.getId())).withRel("collection"));
+                        .post(trajet.getId(),null)).withRel("Créer une reservation de ce trajet"));
     }
 
     @Override

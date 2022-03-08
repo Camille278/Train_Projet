@@ -1,13 +1,11 @@
 package org.miage.trainprojet.boundary;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.miage.trainprojet.Control.ReservationAssembler;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.TrajetRessource;
 import org.miage.trainprojet.Repository.VoyageurRessource;
-import org.miage.trainprojet.entity.Reservation;
-import org.miage.trainprojet.entity.Trajet;
-import org.miage.trainprojet.entity.Voyageur;
-import org.miage.trainprojet.entity.VoyageurInput;
+import org.miage.trainprojet.entity.*;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +15,7 @@ import javax.transaction.Transactional;
 import javax.validation.Valid;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,7 +38,7 @@ public class ReservationRepresentation {
         this.ra = ra;
     }
 
-    @PostMapping(value = "aller/{aller}")
+    @PostMapping(value = "/aller/{aller}")
     @Transactional
     public ResponseEntity<?> post(@PathVariable("aller") String id, @RequestBody @Valid VoyageurInput voyageur){
         Optional<Trajet> t = trajetRessource.findById(id);
@@ -49,18 +48,59 @@ public class ReservationRepresentation {
         }
         Reservation toSave = Reservation.builder().id(UUID.randomUUID().toString())
                 .voyageur(v.get())
-                .aller(t.get()).build();
+                .aller(t.get())
+                .confirme(false)
+                .paye(false).build();
 
         Reservation saved = rr.save(toSave);
         URI location = linkTo(ReservationRepresentation.class).slash(saved.getId()).toUri();
         return ResponseEntity.created(location).body(ra.toModel(saved));
     }
 
-    @GetMapping(value= "{idReservation}")
+    @GetMapping(value= "/{idReservation}")
     public ResponseEntity<?> getOneReservation(@PathVariable("idReservation") String id){
         return Optional.ofNullable(rr.findById(id))
                 .filter(Optional::isPresent)
                 .map(i -> ResponseEntity.ok(ra.toModel(i.get())))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping(value= "/{idReservation}/delete")
+    public ResponseEntity<?> deleteReservation(@PathVariable("idReservation") String id){
+        Optional<Reservation> toDelete = rr.findById(id);
+        toDelete.ifPresent(rr::delete);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping(value = "/{idReservation}/confirm")
+    @Transactional
+    public ResponseEntity <?> patchConfirme(@PathVariable("idReservation") String id){
+        Optional<Reservation> toUpdate = rr.findById(id);
+        if(toUpdate.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+
+        Reservation toSave = toUpdate.get();
+        toSave.setConfirme(true);
+
+        rr.save(toSave);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping(value = "/{idReservation}")
+    @Transactional
+    public ResponseEntity <?> patchRetour(@PathVariable("idReservation") String idReservation, @RequestBody @Valid TrajetInput retour){
+        Optional<Reservation> toUpdate = rr.findById(idReservation);
+        Optional<Trajet> toAdd = trajetRessource.findById(retour.getId());
+        if(toUpdate.isEmpty() || toAdd.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+
+        Reservation toSave = toUpdate.get();
+        toSave.setRetour(toAdd.get());
+
+        rr.save(toSave);
+        return ResponseEntity.ok().build();
+
     }
 }
