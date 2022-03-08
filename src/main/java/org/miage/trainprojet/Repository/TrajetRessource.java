@@ -17,6 +17,6 @@ public interface TrajetRessource extends CrudRepository<Trajet, String> {
     @Query("SELECT t FROM Trajet t WHERE depart = ?1 AND arrivee = ?2 AND jour >= ?3 AND nbPlacesFenetre >0")
     List<Trajet> trajetsFenetre(String depart, String arrivee, LocalDateTime jour);
 
-    @Query("SELECT t FROM Trajet t WHERE depart = ?1 AND arrivee = ?2 AND jour >= ?3 AND nbPlacesFenetre >0 OR nbPlacesCouloir >0")
+    @Query("SELECT t FROM Trajet t WHERE depart = ?1 AND arrivee = ?2 AND jour >= ?3 AND (nbPlacesFenetre >0 OR nbPlacesCouloir >0)")
     List<Trajet> trajets(String depart, String arrivee, LocalDateTime jour);
 }

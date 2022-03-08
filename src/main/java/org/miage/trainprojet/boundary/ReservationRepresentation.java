@@ -72,9 +72,9 @@ public class ReservationRepresentation {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping(value = "/{idReservation}/confirm")
+    @PatchMapping(value = "/{idReservation}/couloir/{couloir}/confirm")
     @Transactional
-    public ResponseEntity <?> patchConfirme(@PathVariable("idReservation") String id){
+    public ResponseEntity <?> patchConfirme(@PathVariable("idReservation") String id, @PathVariable("couloir") int couloir){
         Optional<Reservation> toUpdate = rr.findById(id);
         if(toUpdate.isEmpty()){
             return ResponseEntity.notFound().build();
@@ -83,15 +83,16 @@ public class ReservationRepresentation {
         Reservation toSave = toUpdate.get();
         toSave.setConfirme(true);
 
+        Trajet updateAller = toUpdate.get().getAller();
         rr.save(toSave);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ra.toModel(toSave));
     }
 
-    @PatchMapping(value = "/{idReservation}")
+    @PatchMapping(value = "/{idReservation}/retour/{idTrajet}")
     @Transactional
-    public ResponseEntity <?> patchRetour(@PathVariable("idReservation") String idReservation, @RequestBody @Valid TrajetInput retour){
+    public ResponseEntity <?> patchRetour(@PathVariable("idReservation") String idReservation, @PathVariable("idTrajet") String idRetour){
         Optional<Reservation> toUpdate = rr.findById(idReservation);
-        Optional<Trajet> toAdd = trajetRessource.findById(retour.getId());
+        Optional<Trajet> toAdd = trajetRessource.findById(idRetour);
         if(toUpdate.isEmpty() || toAdd.isEmpty()){
             return ResponseEntity.notFound().build();
         }
@@ -100,7 +101,7 @@ public class ReservationRepresentation {
         toSave.setRetour(toAdd.get());
 
         rr.save(toSave);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ra.toModel(toSave));
 
     }
 }

@@ -26,11 +26,30 @@ public class TrajetAssembler implements RepresentationModelAssembler<Trajet,Enti
                         .post(trajet.getId(),null)).withRel("Créer une reservation de ce trajet"));
     }
 
+    public EntityModel<Trajet> toModelRetour(Trajet trajet, String idReservation) {
+        return EntityModel.of(trajet,
+                linkTo(methodOn(TrajetRepresentation.class)
+                        .getOneTrajet(trajet.getId())).withSelfRel(),
+                linkTo(methodOn(ReservationRepresentation.class)
+                        .patchRetour(idReservation, trajet.getId())).withRel("Ajouter ce retour à la reservation"));
+    }
+
     @Override
     public CollectionModel<EntityModel<Trajet>> toCollectionModel(Iterable<? extends Trajet> entities) {
         List<EntityModel<Trajet>> trajetModel = StreamSupport
                 .stream(entities.spliterator(), false)
                 .map(i-> toModel(i))
+                .toList();
+
+        return CollectionModel.of(trajetModel,
+                linkTo(methodOn(TrajetRepresentation.class).getAllTrajets()).withSelfRel());
+    }
+
+
+    public CollectionModel<EntityModel<Trajet>> toCollectionModelRetour(Iterable<? extends Trajet> entities, String idReservation) {
+        List<EntityModel<Trajet>> trajetModel = StreamSupport
+                .stream(entities.spliterator(), false)
+                .map(i-> toModelRetour(i, idReservation))
                 .toList();
 
         return CollectionModel.of(trajetModel,
