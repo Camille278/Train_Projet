@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  train-pg:
+    image: 'postgres:13.1-alpine'
+    container_name: db
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=Train_Projet
+    volumes:
+      - ./data/train:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+volumes:
+  data:
