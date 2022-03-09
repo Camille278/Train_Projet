@@ -1,6 +1,5 @@
 package org.miage.trainprojet.boundary;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.miage.trainprojet.Control.ReservationAssembler;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.TrajetRessource;
@@ -15,7 +14,6 @@ import javax.transaction.Transactional;
 import javax.validation.Valid;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,19 +36,23 @@ public class ReservationRepresentation {
         this.ra = ra;
     }
 
-    @PostMapping(value = "/aller/{aller}")
+    @PostMapping(value = "/aller/{aller}/couloir/{couloir}/retour/{retour}")
     @Transactional
-    public ResponseEntity<?> post(@PathVariable("aller") String id, @RequestBody @Valid VoyageurInput voyageur){
+    public ResponseEntity<?> post(@PathVariable("aller") String id, @PathVariable("couloir") int couloir, @PathVariable("retour") boolean retour, @RequestBody @Valid VoyageurInput voyageur){
         Optional<Trajet> t = trajetRessource.findById(id);
         Optional<Voyageur> v = voyageurRessource.findById(voyageur.getId());
+
         if(t.isEmpty() || v.isEmpty()){
             return ResponseEntity.notFound().build();
         }
+
         Reservation toSave = Reservation.builder().id(UUID.randomUUID().toString())
                 .voyageur(v.get())
                 .aller(t.get())
                 .confirme(false)
-                .paye(false).build();
+                .paye(false)
+                .choixRetour(retour)
+                .couloir(couloir).build();
 
         Reservation saved = rr.save(toSave);
         URI location = linkTo(ReservationRepresentation.class).slash(saved.getId()).toUri();
@@ -72,9 +74,9 @@ public class ReservationRepresentation {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping(value = "/{idReservation}/couloir/{couloir}/confirm")
+    @PatchMapping(value = "/{idReservation}/confirm")
     @Transactional
-    public ResponseEntity <?> patchConfirme(@PathVariable("idReservation") String id, @PathVariable("couloir") int couloir){
+    public ResponseEntity <?> patchConfirme(@PathVariable("idReservation") String id){
         Optional<Reservation> toUpdate = rr.findById(id);
         if(toUpdate.isEmpty()){
             return ResponseEntity.notFound().build();
@@ -84,6 +86,21 @@ public class ReservationRepresentation {
         toSave.setConfirme(true);
 
         Trajet updateAller = toUpdate.get().getAller();
+        if (toUpdate.get().getCouloir() == 0){
+            updateAller.setNbPlacesFenetre(updateAller.getNbPlacesFenetre()-1);
+        } else {
+            updateAller.setNbPlacesCouloir(updateAller.getNbPlacesCouloir() - 1);
+        }
+
+        Trajet updateRetour = toUpdate.get().getRetour();
+        if (updateRetour != null) {
+            if (toUpdate.get().getCouloir() == 0) {
+                updateRetour.setNbPlacesFenetre(updateRetour.getNbPlacesFenetre() - 1);
+            } else {
+                updateRetour.setNbPlacesCouloir(updateRetour.getNbPlacesCouloir() - 1);
+            }
+        }
+
         rr.save(toSave);
         return ResponseEntity.ok(ra.toModel(toSave));
     }

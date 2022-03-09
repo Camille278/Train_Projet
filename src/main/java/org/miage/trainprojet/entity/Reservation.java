@@ -27,6 +27,8 @@ public class Reservation {
     private Trajet aller;
     @ManyToOne
     private Trajet retour;
+    private int couloir;
+    private boolean choixRetour;
     private boolean confirme;
     private boolean paye;
 }

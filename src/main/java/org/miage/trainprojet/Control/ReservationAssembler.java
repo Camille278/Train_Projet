@@ -2,8 +2,8 @@ package org.miage.trainprojet.Control;
 
 import org.miage.trainprojet.boundary.ReservationRepresentation;
 import org.miage.trainprojet.boundary.TrajetRepresentation;
+import org.miage.trainprojet.boundary.VoyageurRepresentation;
 import org.miage.trainprojet.entity.Reservation;
-import org.miage.trainprojet.entity.Trajet;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
@@ -25,15 +25,19 @@ public class ReservationAssembler implements RepresentationModelAssembler<Reserv
         EntityModel<Reservation> link = EntityModel.of(reservation,
                 linkTo(methodOn(ReservationRepresentation.class)
                         .getOneReservation(reservation.getId())).withSelfRel(),
+                linkTo(methodOn(VoyageurRepresentation.class)
+                        .getOneVoyageur(reservation.getVoyageur().getId())).withRel("Voyageur"),
                 linkTo(methodOn(TrajetRepresentation.class)
                         .getOneTrajet(reservation.getAller().getId())).withRel("Trajet aller"));
 
-        if(reservation.getRetour() == null){
-            link.add(linkTo(methodOn(TrajetRepresentation.class)
-                    .rechercheRetour(reservation.getId(), reservation.getAller().getArrivee(), reservation.getAller().getDepart(),reservation.getAller().getJour().plusDays(1).format(formatters),2)).withRel("Rechercher un retour"));
-        } else {
-            link.add(linkTo(methodOn(TrajetRepresentation.class)
-                    .getOneTrajet(reservation.getAller().getId())).withRel("Trajet retour"));
+        if (reservation.isChoixRetour()){
+            if(reservation.getRetour() == null){
+                link.add(linkTo(methodOn(TrajetRepresentation.class)
+                        .rechercheRetour(reservation.getId(), reservation.getAller().getArrivee(), reservation.getAller().getDepart(),reservation.getAller().getJour().plusDays(1).format(formatters))).withRel("Rechercher un retour"));
+            } else {
+                link.add(linkTo(methodOn(TrajetRepresentation.class)
+                        .getOneTrajet(reservation.getAller().getId())).withRel("Trajet retour"));
+            }
         }
 
         if(!reservation.isConfirme()){
@@ -42,6 +46,11 @@ public class ReservationAssembler implements RepresentationModelAssembler<Reserv
 
             link.add(linkTo(methodOn(ReservationRepresentation.class)
                     .deleteReservation(reservation.getId())).withRel("Annuler cette réservation"));
+        }else {
+            if (!reservation.isPaye()) {
+                link.add(linkTo(methodOn(ReservationRepresentation.class)
+                        .patchConfirme(reservation.getId())).withRel("Payer cette reservation"));
+            }
         }
 
         return link;
@@ -58,13 +67,4 @@ public class ReservationAssembler implements RepresentationModelAssembler<Reserv
                 linkTo(methodOn(TrajetRepresentation.class).getAllTrajets()).withSelfRel());
     }
 
-    public CollectionModel<EntityModel<Reservation>> toCollectionModelRetour(Iterable<? extends Reservation> entities) {
-        List<EntityModel<Reservation>> reservationModel = StreamSupport
-                .stream(entities.spliterator(), false)
-                .map(i-> toModel(i))
-                .toList();
-
-        return CollectionModel.of(reservationModel,
-                linkTo(methodOn(TrajetRepresentation.class).getAllTrajets()).withSelfRel());
-    }
 }

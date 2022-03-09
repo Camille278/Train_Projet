@@ -4,6 +4,8 @@ import org.miage.trainprojet.entity.Voyageur;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface VoyageurRessource extends CrudRepository<Voyageur, String> {
 }
