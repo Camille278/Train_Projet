@@ -50,4 +50,5 @@ public class VoyageurRepresentation {
         return ResponseEntity.ok(ra.toCollectionModel(rr.reservationsVoyageur(id)));
 
     }
+
 }
