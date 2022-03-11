@@ -1,5 +1,6 @@
 package org.miage.trainprojet.Control;
 
+import org.miage.trainprojet.boundary.FavorisRepresentation;
 import org.miage.trainprojet.boundary.ReservationRepresentation;
 import org.miage.trainprojet.boundary.TrajetRepresentation;
 import org.miage.trainprojet.boundary.VoyageurRepresentation;
@@ -26,7 +27,9 @@ public class VoyageurAssembler implements RepresentationModelAssembler<Voyageur,
                 linkTo(methodOn(VoyageurRepresentation.class)
                         .getOneVoyageur(voyageur.getId())).withSelfRel(),
                 linkTo(methodOn(VoyageurRepresentation.class)
-                        .getReservationVoyageur(voyageur.getId())).withRel("Voir ces réservations"));
+                        .getReservationVoyageur(voyageur.getId())).withRel("Voir ces réservations"),
+                linkTo(methodOn(FavorisRepresentation.class)
+                        .getAllFavorisVoyageur(voyageur.getId())).withRel("Voir ces favoris"));
     }
 
     @Override

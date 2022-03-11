@@ -1,5 +1,6 @@
 package org.miage.trainprojet.Control;
 
+import org.miage.trainprojet.boundary.FavorisRepresentation;
 import org.miage.trainprojet.boundary.ReservationRepresentation;
 import org.miage.trainprojet.boundary.TrajetRepresentation;
 import org.miage.trainprojet.boundary.VoyageurRepresentation;

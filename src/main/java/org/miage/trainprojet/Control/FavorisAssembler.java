@@ -1,8 +1,10 @@
 package org.miage.trainprojet.Control;
 
 import org.miage.trainprojet.boundary.FavorisRepresentation;
+import org.miage.trainprojet.boundary.TrajetRepresentation;
 import org.miage.trainprojet.boundary.VoyageurRepresentation;
 import org.miage.trainprojet.entity.Favoris;
+import org.miage.trainprojet.entity.Trajet;
 import org.miage.trainprojet.entity.Voyageur;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -21,10 +23,8 @@ public class FavorisAssembler implements RepresentationModelAssembler<Favoris,En
     @Override
     public EntityModel<Favoris> toModel(Favoris favoris) {
         return EntityModel.of(favoris,
-                linkTo(methodOn(FavorisRepresentation.class)
-                        .getOneFavoris(favoris.getId())).withSelfRel(),
-                linkTo(methodOn(VoyageurRepresentation.class)
-                        .getOneVoyageur(favoris.getVoyageur().getId())).withRel("Voyageur"));
+                linkTo(methodOn(TrajetRepresentation.class)
+                        .recherche(favoris.getDepart(), favoris.getArrivee(), null, 2, false)).withRel("Rechercher ce trajet"));
     }
 
     @Override
@@ -35,7 +35,17 @@ public class FavorisAssembler implements RepresentationModelAssembler<Favoris,En
                 .toList();
 
         return CollectionModel.of(favorisModel,
-                linkTo(methodOn(FavorisRepresentation.class).getAllFavoris()).withSelfRel());
+                linkTo(methodOn(TrajetRepresentation.class).getAllTrajets()).withSelfRel());
+    }
+
+    public CollectionModel<EntityModel<Favoris>> toCollectionModelVoyageur(Iterable<? extends Favoris> entities, String idVoyageur) {
+        List<EntityModel<Favoris>> FavorisModel = StreamSupport
+                .stream(entities.spliterator(), false)
+                .map(i-> toModel(i))
+                .toList();
+
+        return CollectionModel.of(FavorisModel,
+                linkTo(methodOn(VoyageurRepresentation.class).getOneVoyageur(idVoyageur)).withSelfRel());
     }
 
 }

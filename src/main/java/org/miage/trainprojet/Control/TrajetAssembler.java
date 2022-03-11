@@ -38,6 +38,7 @@ public class TrajetAssembler implements RepresentationModelAssembler<Trajet,Enti
         EntityModel<Trajet> toReturn =  toModel(trajet);
         toReturn.add(linkTo(methodOn(ReservationRepresentation.class)
                 .post(trajet.getId(), couloir, retour, null)).withRel("Créer une reservation de ce trajet"));
+
         return toReturn;
     }
 

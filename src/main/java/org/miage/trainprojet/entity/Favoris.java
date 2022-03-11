@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -16,9 +19,20 @@ import javax.persistence.ManyToOne;
 @Builder
 public class Favoris {
     @Id
-    String Id;
-    @ManyToOne
-    private Voyageur voyageur;
+    String id;
     String depart;
     String arrivee;
+    BigInteger nombre;
+
+    public static List<Favoris> parser(List<Object[]> list) {
+        List<Favoris> favs = new ArrayList<>();
+        for (Object[] o : list) {
+            Favoris fav = Favoris.builder()
+                    .depart(o[0].toString()).arrivee(o[1].toString())
+                    .nombre((BigInteger) o[2])
+                    .build();
+            favs.add(fav);
+        }
+        return favs;
+    }
 }
