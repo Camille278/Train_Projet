@@ -38,6 +38,7 @@ public class FavorisRepresentation {
 
         List<Object[]> list = rr.favoris(id);
         List<Favoris> listF = Favoris.parser(list);
+        listF = listF.size() > 3 ? listF.subList(0,3) : listF;
         return ResponseEntity.ok(fa.toCollectionModelVoyageur(listF, id));
     }
 

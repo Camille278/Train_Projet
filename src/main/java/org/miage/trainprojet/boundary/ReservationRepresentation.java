@@ -29,7 +29,7 @@ public class ReservationRepresentation {
     private final ReservationAssembler ra;
 
     //Grâce au constructeur, Spring injecte une instance de ir
-    public ReservationRepresentation(TrajetRessource trajetRessource, VoyageurRessource voyageurRessource, ReservationRessource rr, ReservationAssembler ra){
+    public ReservationRepresentation(TrajetRessource trajetRessource, VoyageurRessource voyageurRessource, ReservationRessource rr, ReservationAssembler ra) {
         this.trajetRessource = trajetRessource;
         this.voyageurRessource = voyageurRessource;
         this.rr = rr;
@@ -38,11 +38,11 @@ public class ReservationRepresentation {
 
     @PostMapping(value = "/aller/{aller}/couloir/{couloir}/retour/{retour}")
     @Transactional
-    public ResponseEntity<?> post(@PathVariable("aller") String id, @PathVariable("couloir") int couloir, @PathVariable("retour") boolean retour, @RequestBody @Valid VoyageurInput voyageur){
+    public ResponseEntity<?> post(@PathVariable("aller") String id, @PathVariable("couloir") int couloir, @PathVariable("retour") boolean retour, @RequestBody @Valid VoyageurInput voyageur) {
         Optional<Trajet> t = trajetRessource.findById(id);
         Optional<Voyageur> v = voyageurRessource.findById(voyageur.getId());
 
-        if(t.isEmpty() || v.isEmpty()){
+        if (t.isEmpty() || v.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
@@ -59,16 +59,16 @@ public class ReservationRepresentation {
         return ResponseEntity.created(location).body(ra.toModel(saved));
     }
 
-    @GetMapping(value= "/{idReservation}")
-    public ResponseEntity<?> getOneReservation(@PathVariable("idReservation") String id){
+    @GetMapping(value = "/{idReservation}")
+    public ResponseEntity<?> getOneReservation(@PathVariable("idReservation") String id) {
         return Optional.ofNullable(rr.findById(id))
                 .filter(Optional::isPresent)
                 .map(i -> ResponseEntity.ok(ra.toModel(i.get())))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping(value= "/{idReservation}/delete")
-    public ResponseEntity<?> deleteReservation(@PathVariable("idReservation") String id){
+    @DeleteMapping(value = "/{idReservation}/delete")
+    public ResponseEntity<?> deleteReservation(@PathVariable("idReservation") String id) {
         Optional<Reservation> toDelete = rr.findById(id);
         toDelete.ifPresent(rr::delete);
         return ResponseEntity.noContent().build();
@@ -76,9 +76,9 @@ public class ReservationRepresentation {
 
     @PatchMapping(value = "/{idReservation}/confirm")
     @Transactional
-    public ResponseEntity <?> patchConfirme(@PathVariable("idReservation") String id){
+    public ResponseEntity<?> patchConfirme(@PathVariable("idReservation") String id) {
         Optional<Reservation> toUpdate = rr.findById(id);
-        if(toUpdate.isEmpty()){
+        if (toUpdate.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
@@ -86,8 +86,8 @@ public class ReservationRepresentation {
         toSave.setConfirme(true);
 
         Trajet updateAller = toUpdate.get().getAller();
-        if (toUpdate.get().getCouloir() == 0){
-            updateAller.setNbPlacesFenetre(updateAller.getNbPlacesFenetre()-1);
+        if (toUpdate.get().getCouloir() == 0) {
+            updateAller.setNbPlacesFenetre(updateAller.getNbPlacesFenetre() - 1);
         } else {
             updateAller.setNbPlacesCouloir(updateAller.getNbPlacesCouloir() - 1);
         }
@@ -107,10 +107,10 @@ public class ReservationRepresentation {
 
     @PatchMapping(value = "/{idReservation}/retour/{idTrajet}")
     @Transactional
-    public ResponseEntity <?> patchRetour(@PathVariable("idReservation") String idReservation, @PathVariable("idTrajet") String idRetour){
+    public ResponseEntity<?> patchRetour(@PathVariable("idReservation") String idReservation, @PathVariable("idTrajet") String idRetour) {
         Optional<Reservation> toUpdate = rr.findById(idReservation);
         Optional<Trajet> toAdd = trajetRessource.findById(idRetour);
-        if(toUpdate.isEmpty() || toAdd.isEmpty()){
+        if (toUpdate.isEmpty() || toAdd.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
