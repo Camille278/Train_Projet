@@ -1,17 +1,13 @@
 package org.miage.trainprojet.Control;
 
 import org.miage.trainprojet.boundary.FavorisRepresentation;
-import org.miage.trainprojet.boundary.ReservationRepresentation;
-import org.miage.trainprojet.boundary.TrajetRepresentation;
 import org.miage.trainprojet.boundary.VoyageurRepresentation;
-import org.miage.trainprojet.entity.Reservation;
 import org.miage.trainprojet.entity.Voyageur;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.StreamSupport;
 

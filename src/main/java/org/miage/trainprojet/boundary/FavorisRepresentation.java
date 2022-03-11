@@ -4,7 +4,6 @@ import org.miage.trainprojet.Control.FavorisAssembler;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.VoyageurRessource;
 import org.miage.trainprojet.entity.*;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @RestController
 @RequestMapping(value="/favoris", produces= MediaType.APPLICATION_JSON_VALUE)

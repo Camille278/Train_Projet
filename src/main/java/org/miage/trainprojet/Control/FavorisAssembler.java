@@ -1,11 +1,8 @@
 package org.miage.trainprojet.Control;
 
-import org.miage.trainprojet.boundary.FavorisRepresentation;
 import org.miage.trainprojet.boundary.TrajetRepresentation;
 import org.miage.trainprojet.boundary.VoyageurRepresentation;
 import org.miage.trainprojet.entity.Favoris;
-import org.miage.trainprojet.entity.Trajet;
-import org.miage.trainprojet.entity.Voyageur;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
