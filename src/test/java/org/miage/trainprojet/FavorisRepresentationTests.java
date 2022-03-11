@@ -42,6 +42,8 @@ public class FavorisRepresentationTests {
     @BeforeEach
     public void setupContext() {
         rr.deleteAll();
+        vr.deleteAll();
+        tr.deleteAll();
         RestAssured.port = port;
     }
 

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +34,7 @@ public class TrajetRepresentation {
         this.ta = ta;
         this.rr = rr;
     }
-    //trajet/depart/Paris/arrivee/nancy/jour/jj-mm-yyyy hh:mm/couloir/0/retour/1
+
     @GetMapping()
     public ResponseEntity<?> getAllTrajets(){
 
@@ -55,16 +56,16 @@ public class TrajetRepresentation {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         LocalDateTime dateTime = LocalDateTime.parse(jour, formatter);
 
-        List<Trajet> aller = listTrajet(depart, arrivee, dateTime,couloir);
+        List<Trajet> aller = listTrajet(depart, arrivee, dateTime, couloir);
 
-        if((retour && (listTrajet(arrivee, depart, dateTime.plusDays(1), couloir)).isEmpty()) || aller.isEmpty()){
-            return ResponseEntity.notFound().build();
+        if((retour && (listTrajet(arrivee, depart, dateTime.plusDays(1), couloir)).isEmpty())){
+            return ResponseEntity.ok(ta.toCollectionModelCouloir(new ArrayList<>(), couloir, retour));
         }
 
         return ResponseEntity.ok(ta.toCollectionModelCouloir(aller, couloir, retour));
     }
 
-    private List<Trajet> listTrajet(String depart, String arrivee, LocalDateTime dateTime, int couloir){
+    public List<Trajet> listTrajet(String depart, String arrivee, LocalDateTime dateTime, int couloir){
         if (couloir == 0) {
             return tr.trajetsFenetre(depart, arrivee, dateTime);
         } else if (couloir == 1) {

@@ -47,6 +47,11 @@ public class VoyageurRepresentation {
 
     @GetMapping(value= "{idVoyageur}/reservations")
     public ResponseEntity<?> getReservationVoyageur(@PathVariable("idVoyageur") String id){
+        Optional<Voyageur> toTest = vr.findById(id);
+
+        if(toTest.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(ra.toCollectionModel(rr.reservationsVoyageur(id)));
 
     }
