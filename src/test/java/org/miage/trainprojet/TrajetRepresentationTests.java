@@ -10,31 +10,22 @@ import org.junit.jupiter.api.Test;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.TrajetRessource;
 import org.miage.trainprojet.Repository.VoyageurRessource;
-import org.miage.trainprojet.boundary.TrajetRepresentation;
 import org.miage.trainprojet.entity.Reservation;
 import org.miage.trainprojet.entity.Trajet;
 import org.miage.trainprojet.entity.Voyageur;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @TestPropertySource(locations = "classpath:application.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -49,11 +40,7 @@ public class TrajetRepresentationTests {
     ReservationRessource rr;
 
     @Autowired
-    @MockBean
     TrajetRessource tr;
-
-    @MockBean
-    TrajetRepresentation trajetRepresentation;
 
     @BeforeEach
     public void setupContext(){
@@ -116,7 +103,7 @@ public class TrajetRepresentationTests {
         tr.save(t2);
         Trajet t3 = new Trajet("3", "Nancy", "Luxembourg", l1.plusDays(5), 10,5,10.30F);
         tr.save(t3);
-        Trajet t4 = new Trajet("3", "Nancy", "Paris", l1.plusDays(5), 10,0,10.30F);
+        Trajet t4 = new Trajet("4", "Nancy", "Paris", l1.plusDays(5), 10,0,10.30F);
         tr.save(t4);
 
         Response response = when().get("/trajets/depart/Nancy/arrivee/Paris/jour/"+s+"/couloir/0/retour/false").then().statusCode(HttpStatus.SC_OK)
@@ -138,7 +125,7 @@ public class TrajetRepresentationTests {
         tr.save(t2);
         Trajet t3 = new Trajet("3", "Nancy", "Luxembourg", l1.plusDays(5), 10,5,10.30F);
         tr.save(t3);
-        Trajet t4 = new Trajet("3", "Nancy", "Paris", l1.plusDays(5), 10,0,10.30F);
+        Trajet t4 = new Trajet("4", "Nancy", "Paris", l1.plusDays(5), 10,0,10.30F);
         tr.save(t4);
 
         Response response = when().get("/trajets/depart/Nancy/arrivee/Paris/jour/"+s+"/couloir/1/retour/false").then().statusCode(HttpStatus.SC_OK)
@@ -160,7 +147,7 @@ public class TrajetRepresentationTests {
         tr.save(t2);
         Trajet t3 = new Trajet("3", "Nancy", "Luxembourg", l1.plusDays(5), 10,5,10.30F);
         tr.save(t3);
-        Trajet t4 = new Trajet("3", "Nancy", "Paris", l1.plusDays(5), 10,0,10.30F);
+        Trajet t4 = new Trajet("4", "Nancy", "Paris", l1.plusDays(5), 10,0,10.30F);
         tr.save(t4);
 
         Response response = when().get("/trajets/depart/Nancy/arrivee/Paris/jour/"+s+"/couloir/2/retour/false").then().statusCode(HttpStatus.SC_OK)
@@ -192,7 +179,7 @@ public class TrajetRepresentationTests {
         tr.save(t2);
         Trajet t3 = new Trajet("3", "Paris", "Nancy", l1.plusDays(5), 10,5,10.30F);
         tr.save(t3);
-        Trajet t4 = new Trajet("3", "Paris", "Nancy", l1.plusDays(5), 10,0,10.30F);
+        Trajet t4 = new Trajet("4", "Paris", "Nancy", l1.plusDays(5), 10,0,10.30F);
         tr.save(t4);
 
         Response response = when().get("/trajets/depart/Nancy/arrivee/Paris/jour/"+s+"/couloir/2/retour/true").then().statusCode(HttpStatus.SC_OK)
@@ -219,32 +206,120 @@ public class TrajetRepresentationTests {
     }
 
     @Test
-    @DisplayName("listTrajet Couloir")
-    public void listTrajetTestCouloir(){
-        doNothing().when(tr).trajetsCouloir(any(),any(),any());
-        trajetRepresentation.listTrajet("", "",LocalDateTime.now(),1);
-        verify(tr, times(1)).trajetsCouloir("","",LocalDateTime.now());
+    @DisplayName("Recherche trajet retour pour réservation inexistante")
+    public void rechercheRetourReservationInexistante(){
+        when().get("reservation/1/depart/Nancy/arrivee/Paris/jour/2021-09-09 00:00").then().statusCode(HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
-    @DisplayName("listTrajet Fenetre")
-    public void listTrajetTestFenetre(){
-        doNothing().when(tr).trajetsFenetre(any(),any(),any());
-        trajetRepresentation.listTrajet("", "",LocalDateTime.now(),0);
-        verify(tr, times(1)).trajetsFenetre("","",LocalDateTime.now());
+    @DisplayName("Recherche trajet retour pour réservation")
+    public void rechercheRetourReservation(){
+        when().get("/trajets/reservation/1/depart/Nancy/arrivee/Paris/jour/2021-09-09 00:00").then().statusCode(HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
-    @DisplayName("listTrajet Fenetre ou Couloir")
-    public void listTrajetFenetreOuCouloir(){
-        //doNothing().when(tr).trajets(any(),any(),any());
+    @DisplayName("Recherche retour Fenetre : 1")
+    public void rechercheRetourFenetre(){
+        String s = "2022-08-01 10:00";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        LocalDateTime l1 = LocalDateTime.parse("2021-01-09 00:00", formatter);
-        List<Trajet> toReturn = new ArrayList();
+        LocalDateTime l1 = LocalDateTime.parse(s, formatter);
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1.plusDays(1), 10,5,10.30F);
+        tr.save(t1);
+        Trajet t2 = new Trajet("2", "Nancy", "Paris", l1.plusHours(1), 0,5,10.30F);
+        tr.save(t2);
+        Trajet t3 = new Trajet("3", "Paris", "Nancy", l1.plusDays(5), 10,5,10.30F);
+        tr.save(t3);
+        Trajet t4 = new Trajet("4", "Paris", "Nancy", l1.plusDays(5), 10,0,10.30F);
+        tr.save(t4);
 
-        Mockito.when(tr.trajets(any(),any(),any())).thenReturn(toReturn);
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
 
-        trajetRepresentation.listTrajet("", "",l1,2);
-        verify(tr, times(1)).trajets("Nancy","Paris",l1);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false);
+        rr.save(r1);
+
+        Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
+                .extract().response();
+        String reservations = response.asString();
+        int nb = StringUtils.countMatches(reservations, "depart");
+        assertEquals(1, nb);
+    }
+
+    @Test
+    @DisplayName("Recherche retour couloir: 1")
+    public void rechercheRetourCouloir(){
+        String s = "2022-08-01 10:00";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        LocalDateTime l1 = LocalDateTime.parse(s, formatter);
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1.plusDays(1), 10,5,10.30F);
+        tr.save(t1);
+        Trajet t2 = new Trajet("2", "Nancy", "Paris", l1.plusHours(1), 0,5,10.30F);
+        tr.save(t2);
+        Trajet t3 = new Trajet("3", "Paris", "Nancy", l1.plusDays(5), 0,5,10.30F);
+        tr.save(t3);
+        Trajet t4 = new Trajet("4", "Paris", "Nancy", l1.plusDays(5), 10,0,10.30F);
+        tr.save(t4);
+
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,1,true,false,false);
+        rr.save(r1);
+
+        Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
+                .extract().response();
+        String reservations = response.asString();
+        int nb = StringUtils.countMatches(reservations, "depart");
+        assertEquals(1, nb);
+    }
+
+    @Test
+    @DisplayName("Recherche retour couloir ou fenetre: 2")
+    public void rechercheRetourCouloirOuFenetre(){
+        String s = "2022-08-01 10:00";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        LocalDateTime l1 = LocalDateTime.parse(s, formatter);
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1.plusDays(1), 10,5,10.30F);
+        tr.save(t1);
+        Trajet t2 = new Trajet("2", "Nancy", "Paris", l1.plusHours(1), 0,5,10.30F);
+        tr.save(t2);
+        Trajet t3 = new Trajet("3", "Paris", "Nancy", l1.plusDays(5), 0,5,10.30F);
+        tr.save(t3);
+        Trajet t4 = new Trajet("4", "Paris", "Nancy", l1.plusDays(5), 10,0,10.30F);
+        tr.save(t4);
+
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,2,true,false,false);
+        rr.save(r1);
+
+        Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
+                .extract().response();
+        String reservations = response.asString();
+        int nb = StringUtils.countMatches(reservations, "depart");
+        assertEquals(2, nb);
+    }
+
+    @Test
+    @DisplayName("Recherche retour sans resultat")
+    public void rechercheRetourSansResultat(){
+        String s = "2022-08-01 10:00";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        LocalDateTime l1 = LocalDateTime.parse(s, formatter);
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false);
+        rr.save(r1);
+
+        Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
+                .extract().response();
+        String reservations = response.asString();
+        int nb = StringUtils.countMatches(reservations, "depart");
+        assertEquals(0, nb);
     }
 }

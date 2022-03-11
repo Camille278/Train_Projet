@@ -65,16 +65,6 @@ public class TrajetRepresentation {
         return ResponseEntity.ok(ta.toCollectionModelCouloir(aller, couloir, retour));
     }
 
-    public List<Trajet> listTrajet(String depart, String arrivee, LocalDateTime dateTime, int couloir){
-        if (couloir == 0) {
-            return tr.trajetsFenetre(depart, arrivee, dateTime);
-        } else if (couloir == 1) {
-            return tr.trajetsCouloir(depart, arrivee, dateTime);
-        } else {
-            return tr.trajets(depart, arrivee, dateTime);
-        }
-    }
-
     @GetMapping(value= "/reservation/{idRes}/depart/{depart}/arrivee/{arrivee}/jour/{jour}")
     public ResponseEntity<?> rechercheRetour(@PathVariable("idRes") String idRes, @PathVariable("depart") String depart,
                                              @PathVariable("arrivee") String arrivee, @PathVariable("jour") String jour) {
@@ -87,19 +77,18 @@ public class TrajetRepresentation {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         LocalDateTime dateTime = LocalDateTime.parse(jour, formatter);
 
-        List<Trajet> res;
-        if (reservation.get().getCouloir() == 0) {
-            res = tr.trajetsFenetre(depart, arrivee, dateTime);
-        } else if (reservation.get().getCouloir() == 1) {
-            res = tr.trajetsCouloir(depart, arrivee, dateTime);
-        } else {
-            res = tr.trajets(depart, arrivee, dateTime);
-        }
+        List<Trajet> res = listTrajet(depart, arrivee, dateTime, reservation.get().getCouloir());
 
-        if (res.isEmpty()){
-            return  ResponseEntity.notFound().build();
-        }else{
-            return ResponseEntity.ok(ta.toCollectionModelRetour(res, idRes));
+        return ResponseEntity.ok(ta.toCollectionModelRetour(res, idRes));
+    }
+
+    public List<Trajet> listTrajet(String depart, String arrivee, LocalDateTime dateTime, int couloir){
+        if (couloir == 0) {
+            return tr.trajetsFenetre(depart, arrivee, dateTime);
+        } else if (couloir == 1) {
+            return tr.trajetsCouloir(depart, arrivee, dateTime);
+        } else {
+            return tr.trajets(depart, arrivee, dateTime);
         }
     }
 }
