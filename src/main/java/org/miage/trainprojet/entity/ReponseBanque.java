@@ -1,0 +1,16 @@
+package org.miage.trainprojet.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class ReponseBanque {
+    private Reservation reservation;
+    private int port;
+    private String message;
+}

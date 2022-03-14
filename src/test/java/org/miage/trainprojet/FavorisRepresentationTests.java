@@ -65,11 +65,11 @@ public class FavorisRepresentationTests {
         Trajet t5 = new Trajet("5", "Nancy", "Cannes", l1.plusDays(3), 10,5,10.30F);
         tr.save(t5);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false);
-        Reservation r2 = new Reservation("2",v1, t2,null,0,false,true,false);
-        Reservation r3 = new Reservation("3",v1, t3,null,0,false,true,false);
-        Reservation r4 = new Reservation("4",v1, t4,null,0,false,true,false);
-        Reservation r5 = new Reservation("5",v1, t5,null,0,false,true,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
+        Reservation r2 = new Reservation("2",v1, t2,null,0,false,true,false,10.30F);
+        Reservation r3 = new Reservation("3",v1, t3,null,0,false,true,false,10.30F);
+        Reservation r4 = new Reservation("4",v1, t4,null,0,false,true,false,10.30F);
+        Reservation r5 = new Reservation("5",v1, t5,null,0,false,true,false,10.30F);
         rr.save(r1);
         rr.save(r2);
         rr.save(r3);
@@ -95,8 +95,8 @@ public class FavorisRepresentationTests {
         Trajet t3 = new Trajet("3", "Nancy", "Luxembourg", l1.plusDays(5), 10,5,10.30F);
         tr.save(t3);
 
-        Reservation r2 = new Reservation("2",v1, t2,null,0,false,true,false);
-        Reservation r3 = new Reservation("3",v1, t3,null,0,false,true,false);
+        Reservation r2 = new Reservation("2",v1, t2,null,0,false,true,false,10.30F);
+        Reservation r3 = new Reservation("3",v1, t3,null,0,false,true,false,10.30F);
         rr.save(r2);
         rr.save(r3);
 

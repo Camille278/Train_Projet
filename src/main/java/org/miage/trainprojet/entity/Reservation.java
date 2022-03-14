@@ -29,4 +29,5 @@ public class Reservation {
     private boolean choixRetour;
     private boolean confirme;
     private boolean paye;
+    private Float prix;
 }

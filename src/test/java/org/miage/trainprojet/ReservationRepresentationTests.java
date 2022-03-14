@@ -67,7 +67,7 @@ public class ReservationRepresentationTests {
         Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
         tr.save(t1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
         rr.save(r1);
 
         when().get("/reservations/"+r1.getId()).then().statusCode(HttpStatus.SC_OK);
@@ -83,7 +83,7 @@ public class ReservationRepresentationTests {
         Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
         tr.save(t1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
         rr.save(r1);
 
         Response response = when().get("/reservations/"+r1.getId()).then().statusCode(HttpStatus.SC_OK).extract().response();
@@ -107,7 +107,7 @@ public class ReservationRepresentationTests {
         Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
         tr.save(t1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
         rr.save(r1);
 
         when().delete("/reservations/"+r1.getId()+"/delete").then().statusCode(HttpStatus.SC_NO_CONTENT);
@@ -160,7 +160,7 @@ public class ReservationRepresentationTests {
         Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
         tr.save(t1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,false,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,false,false,10.30F);
         rr.save(r1);
 
         when().patch("/reservations/1/confirm").then().statusCode(HttpStatus.SC_OK);
@@ -196,7 +196,7 @@ public class ReservationRepresentationTests {
         Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
         tr.save(t1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false,10.30F);
         rr.save(r1);
 
         when().patch("/reservations/1/retour/150").then().statusCode(HttpStatus.SC_NOT_FOUND);

@@ -49,7 +49,7 @@ public class ReservationAssembler implements RepresentationModelAssembler<Reserv
         }else {
             if (!reservation.isPaye()) {
                 link.add(linkTo(methodOn(ReservationRepresentation.class)
-                        .patchConfirme(reservation.getId())).withRel("Payer cette reservation"));
+                        .patchPayer(reservation.getId())).withRel("Payer cette reservation"));
             }
         }
 

@@ -101,9 +101,9 @@ public class VoyageurRepresentationTests {
         Trajet t3 = new Trajet("3", "Nancy", "Luxembourg", l1.plusDays(5), 10,5,10.30F);
         tr.save(t3);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false);
-        Reservation r2 = new Reservation("2",v1, t2,null,0,false,true,false);
-        Reservation r3 = new Reservation("3",v1, t3,null,0,false,true,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
+        Reservation r2 = new Reservation("2",v1, t2,null,0,false,true,false,10.30F);
+        Reservation r3 = new Reservation("3",v1, t3,null,0,false,true,false,10.30F);
         rr.save(r1);
         rr.save(r2);
         rr.save(r3);

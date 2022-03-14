@@ -1,14 +1,21 @@
 package org.miage.trainprojet.boundary;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import org.miage.trainprojet.Control.ReponseBanqueAssembler;
 import org.miage.trainprojet.Control.ReservationAssembler;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.TrajetRessource;
 import org.miage.trainprojet.Repository.VoyageurRessource;
 import org.miage.trainprojet.entity.*;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.loadbalancer.core.RoundRobinLoadBalancer;
+import org.springframework.cloud.loadbalancer.support.LoadBalancerClientFactory;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
@@ -27,13 +34,20 @@ public class ReservationRepresentation {
     private final VoyageurRessource voyageurRessource;
     private final ReservationRessource rr;
     private final ReservationAssembler ra;
+    private final ReponseBanqueAssembler rba;
+
+    RestTemplate template;
+    LoadBalancerClientFactory clientFactory;
 
     //Grâce au constructeur, Spring injecte une instance de ir
-    public ReservationRepresentation(TrajetRessource trajetRessource, VoyageurRessource voyageurRessource, ReservationRessource rr, ReservationAssembler ra) {
+    public ReservationRepresentation(RestTemplate template, LoadBalancerClientFactory clientFactory, TrajetRessource trajetRessource, VoyageurRessource voyageurRessource, ReservationRessource rr, ReservationAssembler ra, ReponseBanqueAssembler rba) {
         this.trajetRessource = trajetRessource;
         this.voyageurRessource = voyageurRessource;
         this.rr = rr;
         this.ra = ra;
+        this.template = template;
+        this.clientFactory = clientFactory;
+        this.rba = rba;
     }
 
     @PostMapping(value = "/aller/{aller}/couloir/{couloir}/retour/{retour}")
@@ -52,7 +66,8 @@ public class ReservationRepresentation {
                 .confirme(false)
                 .paye(false)
                 .choixRetour(retour)
-                .couloir(couloir).build();
+                .couloir(couloir)
+                .prix(t.get().getPrix()).build();
 
         Reservation saved = rr.save(toSave);
         URI location = linkTo(ReservationRepresentation.class).slash(saved.getId()).toUri();
@@ -116,9 +131,48 @@ public class ReservationRepresentation {
 
         Reservation toSave = toUpdate.get();
         toSave.setRetour(toAdd.get());
+        toSave.setPrix(toUpdate.get().getPrix() + toAdd.get().getPrix());
 
         rr.save(toSave);
         return ResponseEntity.ok(ra.toModel(toSave));
 
     }
+
+    //@CircuitBreaker(name = "train-projet", fallbackMethod = "fallbackConversionCall")
+    //@Retry(name = "fallbackExemple", fallbackMethod = "fallbackConversionCall")
+    @PatchMapping(value = "/{idReservation}/payer")
+    public ResponseEntity<?> patchPayer(@PathVariable("idReservation") String idReservation) {
+        Optional<Reservation> toUpdate = rr.findById(idReservation);
+        if (toUpdate.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!toUpdate.get().isConfirme()) {
+            return ResponseEntity.ok("Vous devez confirmer votre réservation avant de la payer");
+        }
+
+        RoundRobinLoadBalancer lb = clientFactory.getInstance("banque-service", RoundRobinLoadBalancer.class);
+        ServiceInstance instance = lb.choose().block().getServer();
+        String url = "http://" + instance.getHost() + ":" + instance.getPort() + "/clients/{idClient}/prix/{prix}/payer";
+
+
+        ReponseBanque response = template.getForObject(url, ReponseBanque.class, toUpdate.get().getVoyageur().getId(), toUpdate.get().getPrix());
+
+        if (response.getMessage().contains("Financement effectué")) {
+            Reservation toSave = toUpdate.get();
+            toSave.setPaye(true);
+            rr.save(toSave);
+            response.setReservation(toSave);
+            return ResponseEntity.ok(rba.toModel(response));
+        }
+
+        return ResponseEntity.ok(rba.toModel(response));
+    }
+
+    //private ResponseEntity<?> fallbackConversionCall(RuntimeException re){
+    //    ReponseBanque rep =  ReponseBanque.builder()
+    //            .message("Erreur de connection au service banque")
+    //            .build();
+    //    return ResponseEntity.internalServerError().body(rep);
+    //}
 }

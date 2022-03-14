@@ -235,7 +235,7 @@ public class TrajetRepresentationTests {
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false,10.30F);
         rr.save(r1);
 
         Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
@@ -263,7 +263,7 @@ public class TrajetRepresentationTests {
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,1,true,false,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,1,true,false,false,10.30F);
         rr.save(r1);
 
         Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
@@ -291,7 +291,7 @@ public class TrajetRepresentationTests {
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,2,true,false,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,2,true,false,false,10.30F);
         rr.save(r1);
 
         Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
@@ -313,7 +313,7 @@ public class TrajetRepresentationTests {
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
         rr.save(r1);
 
         Response response = when().get("/trajets/reservation/1/depart/Paris/arrivee/Nancy/jour/"+s).then().statusCode(HttpStatus.SC_OK)
