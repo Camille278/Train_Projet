@@ -10,12 +10,10 @@ import org.miage.trainprojet.Repository.VoyageurRessource;
 import org.miage.trainprojet.entity.*;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.loadbalancer.core.RoundRobinLoadBalancer;
-import org.springframework.cloud.loadbalancer.support.LoadBalancerClientFactory;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
@@ -35,18 +33,15 @@ public class ReservationRepresentation {
     private final ReservationRessource rr;
     private final ReservationAssembler ra;
     private final ReponseBanqueAssembler rba;
-
-    RestTemplate template;
-    LoadBalancerClientFactory clientFactory;
+    private final BanqueService bs;
 
     //Grâce au constructeur, Spring injecte une instance de ir
-    public ReservationRepresentation(RestTemplate template, LoadBalancerClientFactory clientFactory, TrajetRessource trajetRessource, VoyageurRessource voyageurRessource, ReservationRessource rr, ReservationAssembler ra, ReponseBanqueAssembler rba) {
+    public ReservationRepresentation(BanqueService bs, TrajetRessource trajetRessource, VoyageurRessource voyageurRessource, ReservationRessource rr, ReservationAssembler ra, ReponseBanqueAssembler rba) {
+        this.bs = bs;
         this.trajetRessource = trajetRessource;
         this.voyageurRessource = voyageurRessource;
         this.rr = rr;
         this.ra = ra;
-        this.template = template;
-        this.clientFactory = clientFactory;
         this.rba = rba;
     }
 
@@ -138,8 +133,8 @@ public class ReservationRepresentation {
 
     }
 
-    //@CircuitBreaker(name = "train-projet", fallbackMethod = "fallbackConversionCall")
-    //@Retry(name = "fallbackExemple", fallbackMethod = "fallbackConversionCall")
+    @CircuitBreaker(name = "train-projet", fallbackMethod = "fallbackConversionCall")
+    @Retry(name = "fallbackExemple", fallbackMethod = "fallbackConversionCall")
     @PatchMapping(value = "/{idReservation}/payer")
     public ResponseEntity<?> patchPayer(@PathVariable("idReservation") String idReservation) {
         Optional<Reservation> toUpdate = rr.findById(idReservation);
@@ -151,12 +146,7 @@ public class ReservationRepresentation {
             return ResponseEntity.ok("Vous devez confirmer votre réservation avant de la payer");
         }
 
-        RoundRobinLoadBalancer lb = clientFactory.getInstance("banque-service", RoundRobinLoadBalancer.class);
-        ServiceInstance instance = lb.choose().block().getServer();
-        String url = "http://" + instance.getHost() + ":" + instance.getPort() + "/clients/{idClient}/prix/{prix}/payer";
-
-
-        ReponseBanque response = template.getForObject(url, ReponseBanque.class, toUpdate.get().getVoyageur().getId(), toUpdate.get().getPrix());
+        ReponseBanque response = bs.appelServiceBanque(toUpdate.get());
 
         if (response.getMessage().contains("Financement effectué")) {
             Reservation toSave = toUpdate.get();
@@ -169,10 +159,12 @@ public class ReservationRepresentation {
         return ResponseEntity.ok(rba.toModel(response));
     }
 
-    //private ResponseEntity<?> fallbackConversionCall(RuntimeException re){
-    //    ReponseBanque rep =  ReponseBanque.builder()
-    //            .message("Erreur de connection au service banque")
-    //            .build();
-    //    return ResponseEntity.internalServerError().body(rep);
-    //}
+    private ResponseEntity<?> fallbackConversionCall(RuntimeException re){
+        ReponseBanque rep =  ReponseBanque.builder()
+                .message("Erreur de connection au service banque")
+                .build();
+        return ResponseEntity.internalServerError().body(rep);
+    }
+
+
 }

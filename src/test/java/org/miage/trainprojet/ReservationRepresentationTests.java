@@ -10,11 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.TrajetRessource;
 import org.miage.trainprojet.Repository.VoyageurRessource;
+import org.miage.trainprojet.boundary.BanqueService;
+import org.miage.trainprojet.entity.ReponseBanque;
 import org.miage.trainprojet.entity.Reservation;
 import org.miage.trainprojet.entity.Trajet;
 import org.miage.trainprojet.entity.Voyageur;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
 
@@ -26,7 +30,8 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
 @TestPropertySource(locations = "classpath:application.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -42,6 +47,9 @@ public class ReservationRepresentationTests {
 
     @Autowired
     TrajetRessource tr;
+
+    @MockBean
+    BanqueService bs;
 
     @BeforeEach
     public void setupContext(){
@@ -202,5 +210,125 @@ public class ReservationRepresentationTests {
         when().patch("/reservations/1/retour/150").then().statusCode(HttpStatus.SC_NOT_FOUND);
     }
 
+    @Test
+    @DisplayName("PATCH payer une réservation inexistante")
+    public void patchPayerReservationNotFound(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
 
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/2/payer").then().statusCode(HttpStatus.SC_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("PATCH payer une réservation non confirmée")
+    public void patchPayerReservationNonConfirmee(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false,10.30F);
+        rr.save(r1);
+
+        Response response = when().patch("/reservations/1/payer").then().statusCode(HttpStatus.SC_OK).extract().response();
+        String jsonAsString = response.asString();
+        assertThat(jsonAsString, containsString("Vous devez confirmer votre réservation avant de la payer"));
+    }
+
+    @Test
+    @DisplayName("PATCH payer une réservation : OK")
+    public void patchPayerReservation(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,true,false,10.30F);
+        rr.save(r1);
+
+        ReponseBanque rb = new ReponseBanque(r1, port, "Financement effectué");
+
+        Mockito.when(bs.appelServiceBanque(any())).thenReturn(rb);
+
+        Response response = when().patch("/reservations/1/payer").then().statusCode(HttpStatus.SC_OK).extract().response();
+        String jsonAsString = response.asString();
+        assertThat(jsonAsString, containsString("Financement effectué"));
+    }
+
+    @Test
+    @DisplayName("PATCH payer une réservation : KO")
+    public void patchPayerReservationKO(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,true,false,10.30F);
+        rr.save(r1);
+
+        ReponseBanque rb = new ReponseBanque(r1, port, "Financement impossible");
+
+        Mockito.when(bs.appelServiceBanque(any())).thenReturn(rb);
+
+        Response response = when().patch("/reservations/1/payer").then().statusCode(HttpStatus.SC_OK).extract().response();
+        String jsonAsString = response.asString();
+        assertThat(jsonAsString, containsString("Financement impossible"));
+    }
+
+    @Test
+    @DisplayName("PATCH payer une réservation : check maj")
+    public void patchPayerReservationMaj(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,true,false,10.30F);
+        rr.save(r1);
+
+        ReponseBanque rb = new ReponseBanque(r1, port, "Financement effectué");
+
+        Mockito.when(bs.appelServiceBanque(any())).thenReturn(rb);
+
+        when().patch("/reservations/1/payer").then().statusCode(HttpStatus.SC_OK);
+        Optional<Reservation> r = rr.findById("1");
+        assertTrue(r.get().isPaye());
+    }
+
+    @Test
+    @DisplayName("PATCH payer une réservation : KO - Maj")
+    public void patchPayerReservationKOMaj(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,true,true,false,10.30F);
+        rr.save(r1);
+
+        ReponseBanque rb = new ReponseBanque(r1, port, "Financement impossible");
+
+        Mockito.when(bs.appelServiceBanque(any())).thenReturn(rb);
+
+        when().patch("/reservations/1/payer").then().statusCode(HttpStatus.SC_OK);
+        Optional<Reservation> r = rr.findById("1");
+        assertFalse(r.get().isPaye());
+    }
 }
