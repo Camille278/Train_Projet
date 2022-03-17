@@ -2,18 +2,31 @@ package org.miage.trainprojet.boundary;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.miage.trainprojet.Control.ReponseBanqueAssembler;
 import org.miage.trainprojet.Control.ReservationAssembler;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.TrajetRessource;
 import org.miage.trainprojet.Repository.VoyageurRessource;
 import org.miage.trainprojet.entity.*;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.loadbalancer.core.RoundRobinLoadBalancer;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
@@ -45,9 +58,45 @@ public class ReservationRepresentation {
         this.rba = rba;
     }
 
+    @Operation(summary = "Get toutes les réservations", description = "Retourner toutes les reservations", tags = {"reservations"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès",
+                    content = @Content(schema = @Schema(implementation = Reservation.class)))})
+    @GetMapping()
+    public ResponseEntity<?> getAllReservations() {
+        return ResponseEntity.ok(ra.toCollectionModel(rr.findAll()));
+    }
+
+    @Operation(summary = "Get une reservation", description = "Retourner une reservation", tags = {"reservations"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "idReservation", description = "Reservation id")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès",
+                    content = @Content(schema = @Schema(implementation = Reservation.class))),
+            @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
+    @GetMapping(value = "/{idReservation}")
+    public ResponseEntity<?> getOneReservation(@PathVariable("idReservation") String id) {
+        return Optional.ofNullable(rr.findById(id))
+                .filter(Optional::isPresent)
+                .map(i -> ResponseEntity.ok(ra.toModel(i.get())))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(summary = "Post une reservation", description = "Création d'une réservation avec un trajet", tags = {"reservation, trajet"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "aller", description = "Trajet aller id"),
+            @Parameter(in = ParameterIn.PATH, name = "couloir", description = "Position : fenetre -> 0, couloir -> 1, peu importe -> 2"),
+            @Parameter(in = ParameterIn.PATH, name = "retour", description = "Retour souhaité : true ou false")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Succès"),
+            @ApiResponse(responseCode = "404", description = "Trajet introuvable"),
+            @ApiResponse(responseCode = "404", description = "Voyageur introuvable")})
     @PostMapping(value = "/aller/{aller}/couloir/{couloir}/retour/{retour}")
     @Transactional
-    public ResponseEntity<?> post(@PathVariable("aller") String id, @PathVariable("couloir") int couloir, @PathVariable("retour") boolean retour, @RequestBody @Valid VoyageurInput voyageur) {
+    public ResponseEntity<?> post(@PathVariable("aller") String id, @PathVariable("couloir") int couloir, @PathVariable("retour") boolean retour,
+                                  @RequestBody(description = "Identifiant du voyageur qui effectue la réservation", required = true, content = @Content(
+                                          schema = @Schema(implementation = Voyageur.class)))
+                                  @org.springframework.web.bind.annotation.RequestBody @Valid VoyageurInput voyageur) {
         Optional<Trajet> t = trajetRessource.findById(id);
         Optional<Voyageur> v = voyageurRessource.findById(voyageur.getId());
 
@@ -69,21 +118,31 @@ public class ReservationRepresentation {
         return ResponseEntity.created(location).body(ra.toModel(saved));
     }
 
-    @GetMapping(value = "/{idReservation}")
-    public ResponseEntity<?> getOneReservation(@PathVariable("idReservation") String id) {
-        return Optional.ofNullable(rr.findById(id))
-                .filter(Optional::isPresent)
-                .map(i -> ResponseEntity.ok(ra.toModel(i.get())))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
+    @Operation(summary = "Delete une réservation", description = "Delete une réservation", tags = {"reservations"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "idReservation", description = "Reservation id")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Succès"),
+            @ApiResponse(responseCode = "400", description = "Reservation déjà confirmée ou déjà payée")})
     @DeleteMapping(value = "/{idReservation}/delete")
     public ResponseEntity<?> deleteReservation(@PathVariable("idReservation") String id) {
         Optional<Reservation> toDelete = rr.findById(id);
+
+        if (toDelete.get().isConfirme() || toDelete.get().isPaye() )
+            return ResponseEntity.badRequest().build();
+
         toDelete.ifPresent(rr::delete);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Patch une réservation", description = "Confirmer une réservation", tags = {"reservations", "trajet"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "idReservation", description = "Reservation id")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès"),
+            @ApiResponse(responseCode = "400", description = "Reservation déjà confirmée"),
+            @ApiResponse(responseCode = "400", description = "Plus de places dans le trajet"),
+            @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
     @PatchMapping(value = "/{idReservation}/confirm")
     @Transactional
     public ResponseEntity<?> patchConfirme(@PathVariable("idReservation") String id) {
@@ -91,18 +150,26 @@ public class ReservationRepresentation {
         if (toUpdate.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        if (toUpdate.get().isConfirme() ) {
+            return ResponseEntity.badRequest().build();
+        }
 
         Reservation toSave = toUpdate.get();
         toSave.setConfirme(true);
 
         Trajet updateAller = toUpdate.get().getAller();
+        Trajet updateRetour = toUpdate.get().getRetour();
+
         if (toUpdate.get().getCouloir() == 0) {
+            if (updateAller.getNbPlacesFenetre() == 0 || (updateRetour != null && updateRetour.getNbPlacesFenetre() == 0))
+                return ResponseEntity.badRequest().build();
             updateAller.setNbPlacesFenetre(updateAller.getNbPlacesFenetre() - 1);
         } else {
+            if (updateAller.getNbPlacesCouloir() == 0 || (updateRetour != null && updateRetour.getNbPlacesCouloir() == 0))
+                return ResponseEntity.badRequest().build();
             updateAller.setNbPlacesCouloir(updateAller.getNbPlacesCouloir() - 1);
         }
 
-        Trajet updateRetour = toUpdate.get().getRetour();
         if (updateRetour != null) {
             if (toUpdate.get().getCouloir() == 0) {
                 updateRetour.setNbPlacesFenetre(updateRetour.getNbPlacesFenetre() - 1);
@@ -115,6 +182,14 @@ public class ReservationRepresentation {
         return ResponseEntity.ok(ra.toModel(toSave));
     }
 
+    @Operation(summary = "Patch une réservation", description = "Ajouter un retour à une réservation", tags = {"reservations", "trajet"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "idReservation", description = "Reservation id"),
+            @Parameter(in = ParameterIn.PATH, name = "idTrajet", description = "Trajet id")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès"),
+            @ApiResponse(responseCode = "404", description = "Trajet introuvable"),
+            @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
     @PatchMapping(value = "/{idReservation}/retour/{idTrajet}")
     @Transactional
     public ResponseEntity<?> patchRetour(@PathVariable("idReservation") String idReservation, @PathVariable("idTrajet") String idRetour) {
@@ -133,6 +208,14 @@ public class ReservationRepresentation {
 
     }
 
+    @Operation(summary = "Patch une réservation", description = "Payer une réservation", tags = {"booking"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "idReservation", description = "Reservation id")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Réponse receptionnée de banque-service"),
+            @ApiResponse(responseCode = "400", description = "Reservation déjà payée"),
+            @ApiResponse(responseCode = "400", description = "Reservation non confirmée"),
+            @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
     @CircuitBreaker(name = "train-projet", fallbackMethod = "fallbackConversionCall")
     @Retry(name = "fallbackExemple", fallbackMethod = "fallbackConversionCall")
     @PatchMapping(value = "/{idReservation}/payer")
@@ -142,8 +225,8 @@ public class ReservationRepresentation {
             return ResponseEntity.notFound().build();
         }
 
-        if (!toUpdate.get().isConfirme()) {
-            return ResponseEntity.ok("Vous devez confirmer votre réservation avant de la payer");
+        if (!toUpdate.get().isConfirme() || toUpdate.get().isPaye()) {
+            return ResponseEntity.badRequest().build();
         }
 
         ReponseBanque response = bs.appelServiceBanque(toUpdate.get());

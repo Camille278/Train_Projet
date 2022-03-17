@@ -1,5 +1,13 @@
 package org.miage.trainprojet.boundary;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.miage.trainprojet.Control.TrajetAssembler;
 import org.miage.trainprojet.Repository.ReservationRessource;
 import org.miage.trainprojet.Repository.TrajetRessource;
@@ -35,12 +43,21 @@ public class TrajetRepresentation {
         this.rr = rr;
     }
 
+    @Operation(summary = "Get tous les trajets", description = "Retourner tous les trajets", tags = {"trajets"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès",
+                    content = @Content(schema = @Schema(implementation = Trajet.class)))})
     @GetMapping()
-    public ResponseEntity<?> getAllTrajets(){
+    public ResponseEntity<?> getAllTrajets(){ return ResponseEntity.ok(ta.toCollectionModel(tr.findAll())); }
 
-        return ResponseEntity.ok(ta.toCollectionModel(tr.findAll()));
-    }
-
+    @Operation(summary = "Get un trajet", description = "Retourner un trajet", tags = {"trajets"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "idTrajet", description = "Trajet id")
+    })
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès",
+                    content = @Content(schema = @Schema(implementation = Trajet.class))),
+            @ApiResponse(responseCode = "404", description = "Trajet introuvable")})
     @GetMapping(value= "{idTrajet}")
     public ResponseEntity<?> getOneTrajet(@PathVariable("idTrajet") String id){
         return Optional.ofNullable(tr.findById(id))
@@ -49,6 +66,16 @@ public class TrajetRepresentation {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Rechercher un trajet", description = "Retourner les trajets correspondant à la demande", tags = {"trajets"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "depart", description = "Ville de départ"),
+            @Parameter(in = ParameterIn.PATH, name = "arrivee", description = "Ville d'arrivée"),
+            @Parameter(in = ParameterIn.PATH, name = "jour", description = "Jour et heure souhaités : yyyy-MM-dd HH:mm"),
+            @Parameter(in = ParameterIn.PATH, name = "couloir", description = "Position : fenetre -> 0, couloir -> 1, peu importe -> 2"),
+            @Parameter(in = ParameterIn.PATH, name = "retour", description = "Retour souhaité : true ou false")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès",
+                    content = @Content(schema = @Schema(implementation = Trajet.class)))})
     @GetMapping(value= "/depart/{depart}/arrivee/{arrivee}/jour/{jour}/couloir/{couloir}/retour/{retour}")
     public ResponseEntity<?> recherche(@PathVariable("depart") String depart, @PathVariable("arrivee") String arrivee,
                                         @PathVariable("jour") String jour, @PathVariable("couloir") int couloir, @PathVariable("retour") boolean retour) {
@@ -65,6 +92,16 @@ public class TrajetRepresentation {
         return ResponseEntity.ok(ta.toCollectionModelCouloir(aller, couloir, retour));
     }
 
+    @Operation(summary = "Rechercher un retour", description = "Retourner les trajets retour correspondant à la demande", tags = {"trajets, reservations"})
+    @Parameters(value = {
+            @Parameter(in = ParameterIn.PATH, name = "idRes", description = "Id de la réservation où ajouter ce trajet retour"),
+            @Parameter(in = ParameterIn.PATH, name = "depart", description = "Ville de départ"),
+            @Parameter(in = ParameterIn.PATH, name = "arrivee", description = "Ville d'arrivée"),
+            @Parameter(in = ParameterIn.PATH, name = "jour", description = "Jour et heure souhaités : yyyy-MM-dd HH:mm")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succès",
+                    content = @Content(schema = @Schema(implementation = Trajet.class))),
+            @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
     @GetMapping(value= "/reservation/{idRes}/depart/{depart}/arrivee/{arrivee}/jour/{jour}")
     public ResponseEntity<?> rechercheRetour(@PathVariable("idRes") String idRes, @PathVariable("depart") String depart,
                                              @PathVariable("arrivee") String arrivee, @PathVariable("jour") String jour) {
