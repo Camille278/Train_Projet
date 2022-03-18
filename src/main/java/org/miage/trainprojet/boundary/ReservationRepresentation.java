@@ -123,10 +123,13 @@ public class ReservationRepresentation {
             @Parameter(in = ParameterIn.PATH, name = "idReservation", description = "Reservation id")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Succès"),
-            @ApiResponse(responseCode = "400", description = "Reservation déjà confirmée ou déjà payée")})
+            @ApiResponse(responseCode = "400", description = "Reservation déjà confirmée ou déjà payée"),
+            @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
     @DeleteMapping(value = "/{idReservation}/delete")
     public ResponseEntity<?> deleteReservation(@PathVariable("idReservation") String id) {
         Optional<Reservation> toDelete = rr.findById(id);
+        if (toDelete.isEmpty())
+            return ResponseEntity.notFound().build();
 
         if (toDelete.get().isConfirme() || toDelete.get().isPaye() )
             return ResponseEntity.badRequest().build();
@@ -188,6 +191,7 @@ public class ReservationRepresentation {
             @Parameter(in = ParameterIn.PATH, name = "idTrajet", description = "Trajet id")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Succès"),
+            @ApiResponse(responseCode = "400", description = "Réservation confirmée"),
             @ApiResponse(responseCode = "404", description = "Trajet introuvable"),
             @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
     @PatchMapping(value = "/{idReservation}/retour/{idTrajet}")
@@ -197,6 +201,10 @@ public class ReservationRepresentation {
         Optional<Trajet> toAdd = trajetRessource.findById(idRetour);
         if (toUpdate.isEmpty() || toAdd.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+
+        if (toUpdate.get().isConfirme()) {
+            return ResponseEntity.badRequest().build();
         }
 
         Reservation toSave = toUpdate.get();
@@ -216,8 +224,8 @@ public class ReservationRepresentation {
             @ApiResponse(responseCode = "400", description = "Reservation déjà payée"),
             @ApiResponse(responseCode = "400", description = "Reservation non confirmée"),
             @ApiResponse(responseCode = "404", description = "Reservation introuvable")})
-    @CircuitBreaker(name = "train-projet", fallbackMethod = "fallbackConversionCall")
-    @Retry(name = "fallbackExemple", fallbackMethod = "fallbackConversionCall")
+    @CircuitBreaker(name = "train-projet", fallbackMethod = "fallbackBanqueCall")
+    @Retry(name = "fallbackExemple", fallbackMethod = "fallbackBanqueCall")
     @PatchMapping(value = "/{idReservation}/payer")
     public ResponseEntity<?> patchPayer(@PathVariable("idReservation") String idReservation) {
         Optional<Reservation> toUpdate = rr.findById(idReservation);
@@ -242,7 +250,7 @@ public class ReservationRepresentation {
         return ResponseEntity.ok(rba.toModel(response));
     }
 
-    private ResponseEntity<?> fallbackConversionCall(RuntimeException re){
+    private ResponseEntity<?> fallbackBanqueCall(RuntimeException re){
         ReponseBanque rep =  ReponseBanque.builder()
                 .message("Erreur de connection au service banque")
                 .build();

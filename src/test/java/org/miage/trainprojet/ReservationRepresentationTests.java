@@ -115,11 +115,33 @@ public class ReservationRepresentationTests {
         Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
         tr.save(t1);
 
-        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,false,false,10.30F);
         rr.save(r1);
 
         when().delete("/reservations/"+r1.getId()+"/delete").then().statusCode(HttpStatus.SC_NO_CONTENT);
         when().get("/reservations/"+r1.getId()).then().statusCode(HttpStatus.SC_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("DELETE une reservation deja confirmée")
+    public void deleteOneReservationDejaConfirmee(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
+        rr.save(r1);
+
+        when().delete("/reservations/"+r1.getId()+"/delete").then().statusCode(HttpStatus.SC_BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("DELETE une reservation not found")
+    public void deleteOneReservationNotFound(){
+        when().delete("/reservations/1/delete").then().statusCode(HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
@@ -143,9 +165,22 @@ public class ReservationRepresentationTests {
 
     @Test
     @DisplayName("POST une reservation avec trajet inexistant")
-    public void postOneReservationNotFound(){
+    public void postOneReservationTrajetNotFound(){
         Voyageur v1 = new Voyageur("1", "Beirao");
         vr.save(v1);
+        String body = "{\"id\":\"1\"}";
+
+        given().body(body).contentType(ContentType.JSON)
+                .when().post("/reservations/aller/1/couloir/2/retour/false").then().statusCode(HttpStatus.SC_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("POST une reservation avec voyageur inexistant")
+    public void postOneReservationVoyageurNotFound(){
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
         String body = "{\"id\":\"1\"}";
 
         given().body(body).contentType(ContentType.JSON)
@@ -159,7 +194,7 @@ public class ReservationRepresentationTests {
     }
 
     @Test
-    @DisplayName("PATCH confirmer une reservation existante")
+    @DisplayName("PATCH confirmer une reservation")
     public void patchOneReservationConfirm(){
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
@@ -174,12 +209,75 @@ public class ReservationRepresentationTests {
         when().patch("/reservations/1/confirm").then().statusCode(HttpStatus.SC_OK);
 
         Optional<Reservation> r1b = rr.findById("1");
-
         assertEquals(r1b.get().isConfirme(), true);
     }
 
     @Test
-    @DisplayName("PATCH un retour dans une reservation")
+    @DisplayName("PATCH confirmer une reservation confirmée")
+    public void patchOneReservationConfirmDejaConfirmee(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/1/confirm").then().statusCode(HttpStatus.SC_BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("PATCH confirmer une reservation impossible : plus de places couloir")
+    public void patchOneReservationConfirmPlusPlacesCouloir(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 0,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,1,false,false,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/1/confirm").then().statusCode(HttpStatus.SC_BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("PATCH confirmer une reservation impossible : plus de places fenetre")
+    public void patchOneReservationConfirmPlusPlacesFenetres(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 5,0,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,false,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/1/confirm").then().statusCode(HttpStatus.SC_BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("PATCH confirmer une reservation impossible : plus de places")
+    public void patchOneReservationConfirmPlusPlaces(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 0,0,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,2,false,false,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/1/confirm").then().statusCode(HttpStatus.SC_BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("PATCH ajouter un retour dans une reservation")
     public void patchOneReservationRetour(){
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
@@ -188,14 +286,17 @@ public class ReservationRepresentationTests {
         Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
         tr.save(t1);
 
-        Trajet t2 = new Trajet("2", "Paris", "Paris", l1.plusDays(1), 10,5,10.30F);
+        Trajet t2 = new Trajet("2", "Paris", "Nancy", l1.plusDays(1), 10,5,10.30F);
         tr.save(t2);
 
-        when().patch("/reservations/1/retour/2").then().statusCode(HttpStatus.SC_NOT_FOUND);
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,false,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/1/retour/2").then().statusCode(HttpStatus.SC_OK);
     }
 
     @Test
-    @DisplayName("PATCH un retour dans une reservation")
+    @DisplayName("PATCH ajouter un retour dans une reservation inexistante")
     public void patchOneReservationRetourNotFound(){
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
@@ -208,6 +309,41 @@ public class ReservationRepresentationTests {
         rr.save(r1);
 
         when().patch("/reservations/1/retour/150").then().statusCode(HttpStatus.SC_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("PATCH ajouter un retour dans une reservation confirmée")
+    public void patchOneReservationRetourConfirmee(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Trajet t2 = new Trajet("2", "Paris", "Nancy", l1.plusDays(1), 10,5,10.30F);
+        tr.save(t2);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/1/retour/2").then().statusCode(HttpStatus.SC_BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("PATCH ajouter un retour inexistant dans une reservation")
+    public void patchOneReservationRetourInexistant(){
+        Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
+        vr.save(v1);
+
+        LocalDateTime l1 = LocalDateTime.now();
+        Trajet t1 = new Trajet("1", "Nancy", "Paris", l1, 10,5,10.30F);
+        tr.save(t1);
+
+        Reservation r1 = new Reservation("1",v1, t1,null,0,false,true,false,10.30F);
+        rr.save(r1);
+
+        when().patch("/reservations/1/retour/2").then().statusCode(HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
@@ -239,9 +375,7 @@ public class ReservationRepresentationTests {
         Reservation r1 = new Reservation("1",v1, t1,null,0,true,false,false,10.30F);
         rr.save(r1);
 
-        Response response = when().patch("/reservations/1/payer").then().statusCode(HttpStatus.SC_OK).extract().response();
-        String jsonAsString = response.asString();
-        assertThat(jsonAsString, containsString("Vous devez confirmer votre réservation avant de la payer"));
+        when().patch("/reservations/1/payer").then().statusCode(HttpStatus.SC_BAD_REQUEST);
     }
 
     @Test
@@ -289,7 +423,7 @@ public class ReservationRepresentationTests {
     }
 
     @Test
-    @DisplayName("PATCH payer une réservation : check maj")
+    @DisplayName("PATCH payer une réservation : OK - Maj places train")
     public void patchPayerReservationMaj(){
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
@@ -311,7 +445,7 @@ public class ReservationRepresentationTests {
     }
 
     @Test
-    @DisplayName("PATCH payer une réservation : KO - Maj")
+    @DisplayName("PATCH payer une réservation : KO - Maj places train")
     public void patchPayerReservationKOMaj(){
         Voyageur v1 = new Voyageur(UUID.randomUUID().toString(), "Beirao");
         vr.save(v1);
